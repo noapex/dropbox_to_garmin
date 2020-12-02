@@ -2,7 +2,7 @@ from dropbox import Dropbox
 from dropbox.files import DeletedMetadata, FileMetadata, FolderMetadata, WriteMode
 from garmin_uploader.workflow import Workflow
 import redis
-from flask import Flask, Response, request
+from flask import Flask, Response, request, abort
 from hashlib import sha256
 import hmac
 import threading
@@ -36,6 +36,11 @@ def webhook():
     # Make sure this is a valid request from Dropbox
     signature = request.headers.get('X-Dropbox-Signature')
     if not hmac.compare_digest(signature, hmac.new(bytes(DROPBOX_APP_SECRET.encode('utf-8')), request.data, sha256).hexdigest()):
+        print('App secret missmatch')
+        abort(403)
+
+    if not 'accounts' in request.json['list_folder']:
+        print('Access issue. Review your settings and access token')
         abort(403)
 
     for account in request.json['list_folder']['accounts']:
